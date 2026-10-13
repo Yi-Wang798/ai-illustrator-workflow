@@ -1,0 +1,23 @@
+{
+  "name": "ai-illustrator-workflow",
+  "version": "0.1.0+codex.20261013-concepts",
+  "description": "Reconstruct scientific, commercial, technical, and editorial references as editable native Adobe Illustrator artwork.",
+  "author": {
+    "name": "Yi-Wang798"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Illustrator Workflow",
+    "shortDescription": "把各类参考图重构为可编辑的原生 Illustrator 文件",
+    "longDescription": "A reference-first Illustrator workflow for scientific figures, commercial graphics, technical diagrams, infographics, editorial artwork, icons, and other layered vector reconstruction tasks.",
+    "developerName": "Yi-Wang798",
+    "category": "Design",
+    "capabilities": ["Interactive", "Write"],
+    "brandColor": "#167C80",
+    "defaultPrompt": [
+      "把这张参考图重构为可编辑的 Illustrator 原生对象。",
+      "先生成五张候选构图，选定后再进入 Illustrator 重构。",
+      "按底图逐区校准并检查文字、线条、颜色和渐变。"
+    ]
+  }
+}

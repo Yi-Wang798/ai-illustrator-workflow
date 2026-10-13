@@ -1,0 +1,7 @@
+interface:
+  display_name: "Scientific AI Illustrator"
+  short_description: "把参考图重构为可编辑的 Illustrator 原生对象"
+  brand_color: "#167C80"
+  default_prompt: "Use $scientific-ai-illustrator to reconstruct this reference as editable native Illustrator objects."
+policy:
+  allow_implicit_invocation: true

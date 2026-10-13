@@ -1,0 +1,54 @@
+/*
+  Adobe Illustrator ExtendScript helper.
+  Measures the actual glyph outlines while keeping the source TextFrame editable.
+*/
+var SAIText = (function () {
+  function center(bounds) {
+    return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
+  }
+
+  function glyphBounds(textFrame) {
+    var duplicate = null, outline = null, bounds;
+    try {
+      duplicate = textFrame.duplicate(textFrame.parent, ElementPlacement.PLACEATEND);
+      outline = duplicate.createOutline();
+      bounds = [outline.visibleBounds[0], outline.visibleBounds[1], outline.visibleBounds[2], outline.visibleBounds[3]];
+    } finally {
+      if (outline) {
+        try { outline.remove(); } catch (e1) {}
+      } else if (duplicate) {
+        try { duplicate.remove(); } catch (e2) {}
+      }
+    }
+    return bounds;
+  }
+
+  function centerEditableText(textFrame, targetX, targetY, tolerance, errors, label) {
+    var before = center(glyphBounds(textFrame));
+    textFrame.translate(targetX - before[0], targetY - before[1]);
+    var after = center(glyphBounds(textFrame));
+    var dx = Math.abs(targetX - after[0]);
+    var dy = Math.abs(targetY - after[1]);
+    if (errors && (dx > tolerance || dy > tolerance)) {
+      errors.push((label || textFrame.contents) + ": outlined-glyph center error " + dx + "," + dy);
+    }
+    return {bounds: glyphBounds(textFrame), center: after, error: [dx, dy]};
+  }
+
+  function centerEditableTextVertically(textFrame, targetY, tolerance, errors, label) {
+    var before = center(glyphBounds(textFrame));
+    textFrame.translate(0, targetY - before[1]);
+    var after = center(glyphBounds(textFrame));
+    var dy = Math.abs(targetY - after[1]);
+    if (errors && dy > tolerance) {
+      errors.push((label || textFrame.contents) + ": outlined-glyph vertical center error " + dy);
+    }
+    return {bounds: glyphBounds(textFrame), center: after, error: dy};
+  }
+
+  return {
+    glyphBounds: glyphBounds,
+    centerEditableText: centerEditableText,
+    centerEditableTextVertically: centerEditableTextVertically
+  };
+}());

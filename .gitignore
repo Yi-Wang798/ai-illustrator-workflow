@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+dist/
+build/
+*.ai
+*.jsx
+*.png
+work/
+outputs/
+reviews/
+examples/hcr-concept-regression.json

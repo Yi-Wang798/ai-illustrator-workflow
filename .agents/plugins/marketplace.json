@@ -1,0 +1,20 @@
+{
+  "name": "yi-wang-plugins",
+  "interface": {
+    "displayName": "Yi Wang Illustrator Plugins"
+  },
+  "plugins": [
+    {
+      "name": "ai-illustrator-workflow",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-illustrator-workflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Design"
+    }
+  ]
+}

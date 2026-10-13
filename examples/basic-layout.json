@@ -1,0 +1,84 @@
+{
+  "title": "Basic editable layout",
+  "canvas": {
+    "width_mm": 160,
+    "height_mm": 90,
+    "background": "#FFFFFF"
+  },
+  "layers": [
+    {"name": "01_Background"},
+    {"name": "03_Connections"},
+    {"name": "04_Labels"}
+  ],
+  "objects": [
+    {
+      "type": "rounded_rectangle",
+      "name": "Example card",
+      "layer": "01_Background",
+      "x": 20,
+      "y": 20,
+      "width": 120,
+      "height": 50,
+      "radius": 6,
+      "style": {
+        "fill_gradient": {
+          "type": "linear",
+          "angle": 0,
+          "stops": [
+            {"offset": 0, "color": "#E9F7F7"},
+            {"offset": 100, "color": "#CDEBEC"}
+          ]
+        },
+        "stroke": "#167C80",
+        "stroke_width_mm": 0.5
+      }
+    },
+    {
+      "type": "ellipse",
+      "name": "Accent circle",
+      "layer": "03_Connections",
+      "x": 32,
+      "y": 32,
+      "width": 16,
+      "height": 16,
+      "style": {"fill": "#FFFFFF", "stroke": "#167C80", "stroke_width_mm": 0.6}
+    },
+    {
+      "type": "group",
+      "name": "Grouped motif",
+      "layer": "03_Connections",
+      "children": [
+        {
+          "type": "rectangle",
+          "name": "Motif body",
+          "x": 112,
+          "y": 32,
+          "width": 16,
+          "height": 16,
+          "style": {"fill": "#FFFFFF", "stroke": "#167C80", "stroke_width_mm": 0.6}
+        },
+        {
+          "type": "line",
+          "name": "Motif detail",
+          "x1": 112,
+          "y1": 40,
+          "x2": 128,
+          "y2": 40,
+          "style": {"stroke": "#F28B20", "stroke_width_mm": 0.8}
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Example title",
+      "layer": "04_Labels",
+      "x": 80,
+      "y": 45,
+      "text": "Editable Illustrator artwork",
+      "font_size_pt": 14,
+      "align": "center",
+      "visual_center": [80, 45],
+      "color": "#16324F"
+    }
+  ]
+}
