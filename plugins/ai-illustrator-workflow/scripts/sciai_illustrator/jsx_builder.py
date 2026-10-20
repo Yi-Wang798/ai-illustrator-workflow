@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .schema import validate_spec
+from .layout import prepare_spec
 
 
 PT_PER_MM = 72.0 / 25.4
@@ -16,7 +17,9 @@ def build_jsx(
     ai_path: str | Path,
     png_path: str | Path | None = None,
     spec_base_dir: str | Path | None = None,
+    report_path: str | Path | None = None,
 ) -> str:
+    spec = prepare_spec(spec)
     validate_spec(spec, base_dir=Path(spec_base_dir) if spec_base_dir else None)
     width_pt = _pt(spec["canvas"]["width_mm"])
     height_pt = _pt(spec["canvas"]["height_mm"])
@@ -62,6 +65,7 @@ def build_jsx(
         f"  try {{ if (doc.info) {{ doc.info.title = {_js(spec['title'])}; }} }} catch (metadataError) {{}}",
         "  var layers = {};",
     ]
+    lines.extend(Path(__file__).with_name("readback.jsxinc").read_text(encoding="utf-8").splitlines())
 
     # The default layer is reused as the bottom declared layer.
     for index, layer in enumerate(spec["layers"]):
@@ -163,8 +167,40 @@ def build_jsx(
         lines.append(f"  layers[{_js(reference_layer)}].visible = false;")
 
     ai_path = Path(ai_path).resolve()
+    report_path = Path(report_path).resolve() if report_path else ai_path.parent / "audits" / (ai_path.stem + ".json")
+    expected = []
+    def collect(items, inherited=None, transformed=False):
+        for item in items:
+            layer = item.get("layer", inherited)
+            record = {"id": item["id"], "name": item["name"], "layer": layer,
+                      "typename": "TextFrame" if item["type"] == "text" else "GroupItem" if item["type"] in {"group", "arrow"} else "PathItem",
+                      "allow_outside": item.get("allow_outside_canvas", False)}
+            if item["type"] in {"rectangle", "rounded_rectangle", "ellipse"} and not transformed and not item.get("rotation_deg", 0):
+                record["geometry_mm"] = [item["x"], item["y"], item["x"] + item["width"], item["y"] + item["height"]]
+            if item["type"] == "text":
+                record.update(text=item["text"], font=item.get("font", "NotoSansSC-Regular"))
+                if "visual_center" in item and not transformed:
+                    record["center"] = item["visual_center"]
+                if "container_id" in item:
+                    record.update(container=item["container_id"], padding=item.get("padding_mm", 1))
+            expected.append(record)
+            if item["type"] == "group":
+                collect(item["children"], layer, transformed or bool(item.get("rotation_deg", 0)))
+    collect(spec["objects"])
+    expected_counts = {}
+    for entry in expected:
+        kind = entry["typename"]
+        expected_counts[kind] = expected_counts.get(kind, 0) + 1
+    def arrow_count(items):
+        return sum((1 if i["type"] == "arrow" else arrow_count(i["children"]) if i["type"] == "group" else 0) for i in items)
+    extra_paths = 2 * arrow_count(spec["objects"]) + bool(background)
+    if extra_paths:
+        expected_counts["PathItem"] = expected_counts.get("PathItem", 0) + extra_paths
+    if reference:
+        expected_counts["PlacedItem"] = 1
     lines.extend([
         "  app.redraw();",
+        f"  readDocument({json.dumps(expected, ensure_ascii=False)}, {_js(_win_path(report_path))}, {json.dumps(expected_counts)});",
         f"  var aiFile = new File({_js(_win_path(ai_path))});",
         "  var aiOptions = new IllustratorSaveOptions();",
         "  aiOptions.pdfCompatible = true;",
@@ -275,14 +311,14 @@ def _object_lines(item: dict[str, Any], inherited_layer: str | None, counter: li
         result.append(
             f"{indent}try {{ {var}.textRange.paragraphAttributes.justification = Justification.{justification}; }} catch (justificationError) {{}}"
         )
-        if "visual_center" in item:
-            visual_x, visual_y = item["visual_center"]
-            bounds_var = f"{var}Bounds"
-            result.extend([
-                f"{indent}var {bounds_var} = {var}.visibleBounds;",
-                f"{indent}{var}.translate({_num(_pt(visual_x))} - ({bounds_var}[0] + {bounds_var}[2]) / 2, py({_num(visual_y)}) - ({bounds_var}[1] + {bounds_var}[3]) / 2);",
-            ])
     result.extend(_post_transform_lines(var, item, indent))
+    if object_type == "text" and "visual_center" in item:
+        visual_x, visual_y = item["visual_center"]
+        bounds_var = f"{var}Bounds"
+        result.extend([
+            f"{indent}var {bounds_var} = glyphBounds({var});",
+            f"{indent}{var}.translate({_num(_pt(visual_x))} - ({bounds_var}[0] + {bounds_var}[2]) / 2, py({_num(visual_y)}) - ({bounds_var}[1] + {bounds_var}[3]) / 2);",
+        ])
     result.append(f"{indent}//RETURN:{var}")
     return result
 
@@ -305,7 +341,7 @@ def _gradient_lines(var: str, style: dict[str, Any], indent: str) -> list[str]:
 
 
 def _post_transform_lines(var: str, item: dict[str, Any], indent: str) -> list[str]:
-    result: list[str] = []
+    result: list[str] = [f"{indent}{var}.note = {_js('sciai:' + item['id'])};"]
     if "rotation_deg" in item and float(item["rotation_deg"]) != 0:
         result.append(f"{indent}{var}.rotate({_num(item['rotation_deg'])});")
     return result

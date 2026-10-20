@@ -70,6 +70,12 @@ python plugins/ai-illustrator-workflow/scripts/sciai.py doctor
 
 Skill 还包含几何关系检查、文字视觉居中和修改版本清理工具。描边面板箭头等部分 Illustrator 设置，可能需要通过动作、图形样式或面板操作完成。
 
+### 精确排布与实际文档读回
+
+新画简单流程图时，可以用 `layout` 和 `connections` 自动计算横向或纵向对齐、间距和箭头边界端点。文字设置 `container_id` 后，按实际字形轮廓居中，并检查是否超出容器。已有参考图时保留测量坐标，不强行重排；不支持的路线会明确报错，不会猜着画。可用 `examples/automatic-flow.json` 按上面的构建命令试运行。
+
+每次原生绘图运行都会在最终导出前读取 Illustrator 实际文档，核对对象身份、类型和数量、文字和字体、可见性、边界及支持的规则图形尺寸。检查失败就阻止最终保存，结果写入构建位置旁的 `audits/<文件名>.json`，作为原有项目审计的一部分，不再新增一轮人工填表。遮挡关系、科学含义和复杂几何仍需针对性检查。字段说明见[绘图规范](plugins/ai-illustrator-workflow/skills/scientific-ai-illustrator/references/figure-spec.md)。
+
 ## 市场登记文件与目录
 
 市场登记文件是 [.agents/plugins/marketplace.json](.agents/plugins/marketplace.json)。它定义了 `yi-wang-plugins` 市场，并指向 `plugins/ai-illustrator-workflow`。有了这个文件，用户可以把本仓库添加为自定义插件市场；它不代表插件已经进入公开精选插件目录。

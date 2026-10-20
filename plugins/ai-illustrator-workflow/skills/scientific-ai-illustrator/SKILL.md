@@ -13,6 +13,8 @@ Create layered `.ai` files with native paths, shapes, text, gradients, arrows, m
 - Use `../../scripts/sciai.py build <spec.json> --output <stem>` to create Illustrator JSX without opening Illustrator.
 - Add `--run` on Windows with `pywin32` installed to execute the JSX in Illustrator and save the native `.ai` plus PNG preview.
 - Read [references/figure-spec.md](references/figure-spec.md) when creating or editing a structured specification.
+- For a new simple row/column flow, use the spec's optional `layout`, `connections`, and text `container_id` fields. The builder computes aligned node positions, boundary endpoints, and optical label centers in one compilation pass. Do not auto-reflow a measured reference or force complex routes into this mode; use explicit measured paths instead.
+- Every `--run` performs one actual Illustrator-document readback before final saving. Stable object IDs identify the new objects; actual types, names, layers, visibility, native counts, text/font, glyph bounds, and supported primitive bounds are checked. The report is written to `audits/<stem>.json` next to the build, and failures stop final AI/PNG export. Keep the report as the machine-readable part of the existing project audit, not a second manual checklist; move a passing report from the build directory into the permanent project audit directory before temporary cleanup. A rebuild creates a new document, so all its objects are new; for custom in-place edits, apply the same readback only to changed objects and their dependencies.
 
 ## Choose the mode
 
@@ -88,7 +90,7 @@ Apply the following workflow in proportion to the requested work. For simple art
 - Inspect united shapes for doubled edges, accidental seams, inconsistent caps/joins, and mis-scaled strokes.
 - Inspect enclosing contours around their complete perimeter at component scale. A visually open or segmented frame fails even when its nominal ellipse/rectangle object still exists underneath other artwork.
 - Build an arrow as one stroked path and set its start/end marker in Illustrator's Stroke panel whenever possible. Because Illustrator's scripting DOM does not expose Stroke-panel arrowheads, use an approved graphic style/action or perform that final panel operation in Illustrator. Never append a second stroked arrow object to the endpoint. If a separate geometric head is unavoidable, end the shaft exactly at the head base so no line protrudes through the tip. Verify cap, join, head alignment, and rounded bends at component scale.
-- Put arrows on a dedicated layer above the objects they connect. Declare forbidden bounding boxes for text and unrelated objects, run collision checks, and fail when an arrow is masked, clipped, overlapped, or lacks the required clearance.
+- Put arrows on a dedicated layer above the objects they connect. For simple flows, compute endpoints from primitive boundaries and use explicit clearance; the automatic compiler rejects routes through unrelated node boxes and gaps too short for the head. For other routes, declare forbidden bounds and inspect collisions. Fail when an arrow is masked, clipped, overlapped, or lacks clearance.
 
 ## Color and appearance analysis
 
@@ -110,6 +112,7 @@ Apply the following workflow in proportion to the requested work. For simple art
 ## Verification and delivery
 
 - Run schema validation and the geometry/project preflight checks required by the declared verification scope. Resolve failures in affected constraints before construction or export; do not require unrelated contracts for a simple local edit. Concept-contract validation checks inputs only, and never replaces inspection of generated pixels or the final Illustrator objects.
+- Reuse the builder's actual-document report for checks it already covers; add only reference-specific relationships it cannot infer. Hidden-by-occlusion, scientific topology, arbitrary clipping contours, and final visual quality still need the scoped visual/geometry checks above. Do not treat layer visibility or object counts as proof that artwork is not covered.
 - Open the generated `.ai` in Illustrator. Verify layer order, reference-layer lock/visibility, editable text, native paths/gradients/effects, groups, masks, and the clean preview.
 - If Illustrator produces a corrupt preview or text-engine error, close only the generated documents, reopen a clean document, and regenerate. Never deliver a damaged export.
 - Deliver the `.ai`, PNG preview, source spec/build file, and project audit manifest.

@@ -1,0 +1,18 @@
+{
+  "title": "Automatic layout and actual document readback",
+  "canvas": {"width_mm": 160, "height_mm": 50, "background": "#FFFFFF"},
+  "layers": [{"name": "01_Diagram"}, {"name": "02_Connections"}],
+  "layout": {"direction": "horizontal", "node_ids": ["input", "process", "output"], "origin": [10, 15], "gap_mm": 14},
+  "connections": [
+    {"id": "input-process", "source": "input", "target": "process", "layer": "02_Connections", "clearance_mm": 1.5, "head_size": 2},
+    {"id": "process-output", "source": "process", "target": "output", "layer": "02_Connections", "clearance_mm": 1.5, "head_size": 2}
+  ],
+  "objects": [
+    {"id": "input", "type": "rounded_rectangle", "name": "Input panel", "layer": "01_Diagram", "width": 34, "height": 20, "radius": 3, "style": {"fill": "#E2F2F0", "stroke": "#167C80"}},
+    {"id": "process", "type": "rounded_rectangle", "name": "Process panel", "layer": "01_Diagram", "width": 34, "height": 20, "radius": 3, "style": {"fill": "#E2F2F0", "stroke": "#167C80"}},
+    {"id": "output", "type": "rounded_rectangle", "name": "Output panel", "layer": "01_Diagram", "width": 34, "height": 20, "radius": 3, "style": {"fill": "#E2F2F0", "stroke": "#167C80"}},
+    {"id": "input-label", "type": "text", "name": "Input label", "layer": "01_Diagram", "text": "Input", "font_size_pt": 12, "container_id": "input", "padding_mm": 2},
+    {"id": "process-label", "type": "text", "name": "Process label", "layer": "01_Diagram", "text": "Process", "font_size_pt": 12, "container_id": "process", "padding_mm": 2},
+    {"id": "output-label", "type": "text", "name": "Output label", "layer": "01_Diagram", "text": "Output", "font_size_pt": 12, "container_id": "output", "padding_mm": 2}
+  ]
+}

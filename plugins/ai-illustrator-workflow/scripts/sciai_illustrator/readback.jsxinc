@@ -1,0 +1,110 @@
+// Original ES3-compatible document readback. Operates on the one newly built document.
+function glyphBounds(frame) {
+  var copy = null, outlined = null;
+  try {
+    copy = frame.duplicate();
+    outlined = copy.createOutline();
+    var b = outlined.visibleBounds;
+    return [b[0], b[1], b[2], b[3]];
+  } finally {
+    if (outlined) { outlined.remove(); }
+    else if (copy) { copy.remove(); }
+  }
+}
+function encodeJSON(value) {
+  if (value === null) { return 'null'; }
+  if (typeof value === 'string') {
+    return '"' + value.replace(/[\\"\x00-\x1f]/g, function (c) {
+      var h = c.charCodeAt(0).toString(16);
+      return '\\u' + ('0000' + h).slice(-4);
+    }) + '"';
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') { return String(value); }
+  var parts = [], k;
+  if (value instanceof Array) {
+    for (k = 0; k < value.length; k++) { parts.push(encodeJSON(value[k])); }
+    return '[' + parts.join(',') + ']';
+  }
+  for (k in value) { if (value.hasOwnProperty(k)) { parts.push(encodeJSON(k) + ':' + encodeJSON(value[k])); } }
+  return '{' + parts.join(',') + '}';
+}
+function readDocument(expected, reportPath, expectedCounts) {
+  app.redraw();
+  var found = {}, i, obj, key, entry, bounds, actual, ancestor;
+  var report = {schema_version: 1, passed: true, objects: [], errors: [], native_type_counts: {}};
+  // Copy the collection before outlining text, which temporarily changes pageItems.
+  for (i = 0; i < doc.pageItems.length; i++) {
+    obj = doc.pageItems[i];
+    report.native_type_counts[obj.typename] = (report.native_type_counts[obj.typename] || 0) + 1;
+    if (obj.note && obj.note.indexOf('sciai:') === 0) {
+      key = '$' + obj.note.substr(6);
+      if (!found[key]) { found[key] = []; }
+      found[key].push(obj);
+    }
+  }
+  report.expected_type_counts = expectedCounts;
+  for (key in expectedCounts) {
+    if ((report.native_type_counts[key] || 0) !== expectedCounts[key]) { report.errors.push(key + ': actual object count mismatch'); }
+  }
+  for (key in report.native_type_counts) {
+    if (!expectedCounts[key]) { report.errors.push(key + ': unexpected native objects'); }
+  }
+  for (i = 0; i < expected.length; i++) {
+    entry = expected[i];
+    actual = {id: entry.id, expected_type: entry.typename};
+    var matches = found['$' + entry.id] || [];
+    actual.match_count = matches.length;
+    if (matches.length !== 1) {
+      report.errors.push(entry.id + ': expected exactly one actual object');
+      report.objects.push(actual); continue;
+    }
+    obj = matches[0]; actual.name = obj.name; actual.type = obj.typename;
+    actual.layer = obj.layer.name;
+    actual.visible = true; ancestor = obj;
+    while (ancestor && ancestor !== doc) {
+      if (ancestor.hidden === true || ancestor.visible === false || ancestor.opacity === 0) { actual.visible = false; }
+      ancestor = ancestor.parent;
+    }
+    if (actual.type !== entry.typename || actual.name !== entry.name || actual.layer !== entry.layer || !actual.visible) {
+      report.errors.push(entry.id + ': type/name/layer/visibility mismatch');
+    }
+    bounds = obj.visibleBounds;
+    if (actual.type === 'PathItem') { actual.anchor_count = obj.pathPoints.length; actual.closed = obj.closed; }
+    if (entry.geometry_mm) {
+      var gb = obj.geometricBounds;
+      actual.geometry_mm = [gb[0] / MM, (DOC_H - gb[1]) / MM, gb[2] / MM, (DOC_H - gb[3]) / MM];
+      for (var g = 0; g < 4; g++) {
+        if (Math.abs(actual.geometry_mm[g] - entry.geometry_mm[g]) > 0.02) { report.errors.push(entry.id + ': actual geometry mismatch'); break; }
+      }
+    }
+    if (entry.typename === 'TextFrame') {
+      actual.text = obj.contents; actual.font = obj.textRange.characterAttributes.textFont.name;
+      if (actual.text.replace(/\r\n?/g, '\n') !== entry.text.replace(/\r\n?/g, '\n')) { report.errors.push(entry.id + ': text mismatch'); }
+      if (actual.font !== entry.font) { report.errors.push(entry.id + ': requested font unavailable or substituted'); }
+      if (actual.text.replace(/\s/g, '').length) { bounds = glyphBounds(obj); }
+      if (entry.center) {
+        actual.center_error_mm = [Math.abs((bounds[0] + bounds[2]) / 2 / MM - entry.center[0]), Math.abs((DOC_H - (bounds[1] + bounds[3]) / 2) / MM - entry.center[1])];
+        if (actual.center_error_mm[0] > 0.1 || actual.center_error_mm[1] > 0.1) { report.errors.push(entry.id + ': glyph center differs by more than 0.1 mm'); }
+      }
+    }
+    actual.bounds_mm = [bounds[0] / MM, (DOC_H - bounds[1]) / MM, bounds[2] / MM, (DOC_H - bounds[3]) / MM];
+    var limit = [0, DOC_H, DOC_W, 0], padding = 0;
+    if (entry.container) {
+      var hosts = found['$' + entry.container] || [];
+      if (hosts.length !== 1) { report.errors.push(entry.id + ': missing container'); }
+      else { limit = hosts[0].geometricBounds; padding = entry.padding * MM; }
+    }
+    if ((!entry.allow_outside || entry.container) && (bounds[0] < limit[0] + padding - 0.01 * MM || bounds[1] > limit[1] - padding + 0.01 * MM || bounds[2] > limit[2] - padding + 0.01 * MM || bounds[3] < limit[3] + padding - 0.01 * MM)) {
+      report.errors.push(entry.id + ': actual visible bounds exceed container/artboard');
+    }
+    report.objects.push(actual);
+  }
+  report.passed = report.errors.length === 0;
+  var file = new File(reportPath);
+  if (!file.parent.exists && !file.parent.create()) { throw new Error('Cannot create audit directory'); }
+  file.encoding = 'UTF-8';
+  if (!file.open('w')) { throw new Error('Cannot write document audit'); }
+  try { file.write(encodeJSON(report)); } finally { file.close(); }
+  if (!report.passed) { throw new Error('Document readback failed: ' + report.errors.join('; ')); }
+  return report;
+}

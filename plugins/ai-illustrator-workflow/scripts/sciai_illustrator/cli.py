@@ -61,6 +61,7 @@ def _build(args: argparse.Namespace) -> int:
         print(f"已生成 AI: {ai_path}")
         if png_path:
             print(f"已生成预览: {png_path}")
+        print(f"实际文档读回报告: {ai_path.parent / 'audits' / (ai_path.stem + '.json')}")
     return 0
 
 

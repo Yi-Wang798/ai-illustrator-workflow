@@ -32,11 +32,15 @@ def load_spec(path: str | Path) -> dict[str, Any]:
         data = json.loads(spec_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SpecError(f"无法读取规范 {spec_path}: {exc}") from exc
+    from .layout import prepare_spec
+    data = prepare_spec(data)
     validate_spec(data, base_dir=spec_path.parent)
     return data
 
 
 def validate_spec(spec: Any, base_dir: Path | None = None) -> None:
+    from .layout import prepare_spec
+    spec = prepare_spec(spec)
     if not isinstance(spec, dict):
         raise SpecError("顶层必须是 JSON 对象")
 
@@ -106,6 +110,8 @@ def _validate_object(
 ) -> None:
     if not isinstance(item, dict):
         raise SpecError(f"{location} 必须是对象")
+    if "allow_outside_canvas" in item and not isinstance(item["allow_outside_canvas"], bool):
+        raise SpecError(f"{location}.allow_outside_canvas must be boolean")
     object_type = item.get("type")
     if object_type not in OBJECT_TYPES:
         raise SpecError(f"{location}.type 不支持: {object_type!r}")

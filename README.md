@@ -70,6 +70,12 @@ python plugins/ai-illustrator-workflow/scripts/sciai.py doctor
 
 The skill also includes helpers for declared geometry checks, optical text centering and revision cleanup. Some Illustrator settings, including Stroke-panel arrowheads, may require an Illustrator action, graphic style or panel operation.
 
+### Precise layout and document readback
+
+For simple new flows, optional `layout` and `connections` fields compute row/column alignment and arrow endpoints from primitive boundaries. Text `container_id` centers actual glyph outlines and checks label clearance. Measured references retain their coordinates; unsupported routes fail explicitly instead of being approximated. Try `examples/automatic-flow.json` with the same build command.
+
+Every native run reads the actual Illustrator document before final export, checking identities, object types/counts, text/font, visibility, bounds and supported primitive geometry. Failed checks block final saving; one machine-readable report is kept in `audits/<stem>.json` beside the build. This report supplements the existing project audit without another manual review stage. Visual occlusion, scientific meaning and complex geometry still require targeted inspection. Details are in [the specification guide](plugins/ai-illustrator-workflow/skills/scientific-ai-illustrator/references/figure-spec.md).
+
 ## Marketplace catalog and repository layout
 
 The registration file is [.agents/plugins/marketplace.json](.agents/plugins/marketplace.json). It defines the `yi-wang-plugins` marketplace and points to `plugins/ai-illustrator-workflow`. This catalog makes the repository installable as a custom marketplace; it does not submit the plugin to a public curated catalog.
