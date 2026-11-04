@@ -80,6 +80,7 @@ Apply the following workflow in proportion to the requested work. For simple art
 
 ## Typography and strokes
 
+- Default to a clean, bright, uncluttered composition with ample whitespace and readable type. Keep only labels, values, units, and annotations needed to understand the figure; omit decorative microtext, redundant explanations, and invented copy. Do not remove user-specified or scientifically necessary text; preserve an approved reference unless the user requests simplification.
 - Default to Noto Sans SC for all text, using its regular/medium/bold weights for hierarchy. If the user explicitly specifies another font, use the user-specified family instead. Keep each semantic level internally consistent.
 - Center text only when its role is centered. Use left/right alignment and leaders for external callouts when the composition requires them.
 - For text inside a shape, never treat `TextFrame.visibleBounds` as the visible glyph boundary. Illustrator includes font ascender, descender, baseline, and line-metric whitespace in that value, which can report a mathematically centered text frame while the actual letters remain visibly high or low.
@@ -96,7 +97,8 @@ Apply the following workflow in proportion to the requested work. For simple art
 
 - Classify every component as solid, linear gradient, radial gradient, mesh/freeform gradient, pattern, texture, transparency, blend mode, clipping mask, or effect before construction.
 - For gradients, record direction/angle, stop positions, colors, and stop opacity. Recreate detected gradients as native Illustrator appearances rather than replacing them with nearby flat colors.
-- Sample colors from the approved reference or apply the supplied brand/color specification. Separate structural color, semantic color, highlight, shadow, and background roles.
+- When a reference is available, prefer Illustrator's Eyedropper to sample representative interior colors; avoid anti-aliased edges and text. If direct sampling is unavailable, sample the source image pixels with an equivalent color-aware tool and report that fallback. Honor specified colors and color profiles; visual judgment alone is not evidence of a sampled match.
+- For gradients and apparent volume, sample multiple representative highlight, midtone, and shadow locations, then reconstruct the direction, stops, opacity and intensity with editable native gradients or clipped tonal shapes. Compare against the reference and keep the light direction coherent. Sampling is subject to source resolution, transparency, compression, and color management; do not claim exact matching without verification.
 - Reproduce depth cues only where the reference or brief uses them. Keep intentionally flat artwork flat.
 
 ## File lifecycle

@@ -1,6 +1,6 @@
 {
   "name": "ai-illustrator-workflow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Reconstruct scientific, commercial, technical, and editorial references as editable native Adobe Illustrator artwork.",
   "author": {
     "name": "Yi-Wang798"
